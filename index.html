@@ -158,7 +158,10 @@ const draco=new THREE.DRACOLoader();draco.setDecoderPath('https://cdn.jsdelivr.n
 const gl=new THREE.GLTFLoader();gl.setDRACOLoader(draco);
 gl.load('coche.glb',gltf=>{
   model=gltf.scene;scene.add(model);
-  model.traverse(o=>{if(o.isMesh){o.material=o.material.clone()}});
+  model.traverse(o=>{if(o.isMesh){const m=o.material.clone();m.emissiveMap=null;m.emissive.setHex(0);m.emissiveIntensity=1;
+    const dec=/decal/i.test(m.name+o.name+(o.parent?o.parent.name:''));
+    if(dec){m.polygonOffset=true;m.polygonOffsetFactor=-2;m.depthWrite=false}else{m.transparent=false;m.depthWrite=true;m.alphaTest=0}
+    m.needsUpdate=true;o.material=m}});
   model.updateMatrixWorld(true);
   const b=new THREE.Box3().setFromObject(model),sz=b.getSize(new THREE.Vector3()),ct=b.getCenter(new THREE.Vector3());
   const s=5.2/Math.max(sz.x,sz.y,sz.z);
@@ -169,22 +172,22 @@ gl.load('coche.glb',gltf=>{
   const mkG=(id,ex,wname)=>{const g=new THREE.Group();g.userData={id,ex:new THREE.Vector3(...ex),wname};model.add(g);groups.push(g);return g};
   const by=re=>kids.filter(k=>re.test(k.name));
   const tires=by(/^Tire/i),rims=by(/^Rim/i);
-  const body=mkG('body',[0,110,0]);
+  const body=mkG('body',[0,45,0]);
   const dir=tires.length?Math.sign(centerL(tires[0]).z)||1:1; // signo z de la rueda "FL" = delante
   const wg=[];
   tires.forEach(t=>{
     const tc=centerL(t);let r=rims.reduce((a,x)=>!a||centerL(x).distanceTo(tc)<centerL(a).distanceTo(tc)?x:a,null);
     const front=Math.sign(tc.z)===dir,left=tc.x*dir>0;
-    const g=mkG('wheel',[Math.sign(tc.x)*170,0,0],'Rueda '+(front?'delantera':'trasera')+(left?' izquierda':' derecha'));
+    const g=mkG('wheel',[Math.sign(tc.x)*90,0,0],'Rueda '+(front?'delantera':'trasera')+(left?' izquierda':' derecha'));
     g.attach(t);if(r){g.attach(r);rims.splice(rims.indexOf(r),1)}wg.push(g);
   });
   const single=(re,id,ex)=>{const l=by(re);if(!l.length)return;const g=mkG(id,ex);l.forEach(k=>g.attach(k))};
-  single(/^Exhaust/i,'exhaust',[0,60,-dir*130]);
-  single(/^Rear_?Transmission/i,'trans',[0,50,-dir*240]);
-  single(/^Gears/i,'gears',[0,170,0]);
-  single(/^Seat/i,'seat',[0,230,0]);
-  single(/^Antennas/i,'ant',[0,320,0]);
-  single(/^(Steering|Its_for|Ferrari_Button|Buttons|Grip_Button)/i,'steer',[0,290,dir*70]);
+  single(/^Exhaust/i,'exhaust',[0,25,-dir*60]);
+  single(/^Rear_?Transmission/i,'trans',[0,20,-dir*110]);
+  single(/^Gears/i,'gears',[0,80,0]);
+  single(/^Seat/i,'seat',[0,110,0]);
+  single(/^Antennas/i,'ant',[0,150,0]);
+  single(/^(Steering|Its_for|Ferrari_Button|Buttons|Grip_Button)/i,'steer',[0,130,dir*35]);
   kids.forEach(k=>{
     if(!k.parent||k.parent===model||groups.some(g=>g.children.includes(k)))return;
     if(/^Decal_?Tire/i.test(k.name)){const c=centerL(k);const g=wg.reduce((a,x)=>!a||centerL(x).distanceTo(c)<centerL(a).distanceTo(c)?x:a,null);(g||body).attach(k)}
@@ -199,8 +202,8 @@ gl.load('coche.glb',gltf=>{
 },e=>{if(e.total){const p=Math.round(e.loaded/e.total*100);document.querySelector('#bar i').style.width=p+'%';document.getElementById('pct').textContent=p+' %'}else{document.getElementById('pct').textContent=(e.loaded/1048576).toFixed(0)+' MB'}},
 ()=>fail('Falta el archivo coche.glb junto a index.html, o estás abriendo la web con doble clic. Publícala en GitHub Pages o usa un servidor local.'));
 
-function glow(g,v){g.traverse(o=>{if(o.isMesh&&o.material.emissive)o.material.emissive.setHex(v)})}
-function refresh(){groups.forEach(g=>glow(g,g===selected?0x5a4600:g===hover?0x2a2a2a:0))}
+function glow(g,v,i){g.traverse(o=>{if(o.isMesh){o.material.emissive.setHex(v);o.material.emissiveIntensity=i}})}
+function refresh(){groups.forEach(g=>g===selected?glow(g,0xffa800,.6):g===hover?glow(g,0xff7a00,.35):glow(g,0,0))}
 function select(g){
   selected=g;refresh();groups.forEach(x=>x.userData.btn.setAttribute('aria-pressed',x===g));
   if(!g)return;const d=INFO[g.userData.id];
@@ -228,6 +231,7 @@ let t=0;
   t+=(ex.value/100-t)*.12;
   groups.forEach(g=>g.position.copy(g.userData.ex).multiplyScalar(t));
   if(focusT)controls.target.lerp(focusT,.08);
+  if(selected)glow(selected,0xffa800,.55+.3*Math.sin(performance.now()/260));
   controls.update();renderer.render(scene,camera);
 })();
 })();
