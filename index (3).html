@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fernando Alonso · Desmonta un Fórmula 1 en 3D</title>
+<meta name="description" content="Explora en 3D cómo funciona un Fórmula 1, desmóntalo pieza a pieza y conoce la carrera de Fernando Alonso.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#10201d;--paper:#ebe8e1;--panel:#f7f5f0;--green:#0a6b5c;--sun:#f2c230;--mute:#5c6b67;--line:#cfcbc0}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{font:400 17px/1.6 "Source Sans 3",system-ui,sans-serif;background:var(--paper);color:var(--ink)}
+h1,h2,h3{font-family:"Big Shoulders Display",Impact,sans-serif;font-weight:800;line-height:.95;letter-spacing:.01em}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+header{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:12px clamp(16px,4vw,48px);background:rgba(235,232,225,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+header b{font:900 26px "Big Shoulders Display";letter-spacing:.03em}
+header b span{color:var(--green)}
+nav{display:flex;gap:22px;font-weight:600;font-size:15px}
+nav a{text-decoration:none;color:var(--mute)}nav a:hover{color:var(--ink)}
+#lab{display:grid;grid-template-columns:1fr 380px;min-height:calc(100vh - 62px)}
+#stage{position:relative;min-height:70vh;background:radial-gradient(ellipse at 50% 70%,#fbfaf6 0%,#dcd8cc 100%);overflow:hidden;touch-action:none}
+canvas{display:block;width:100%;height:100%;cursor:grab}canvas:active{cursor:grabbing}
+.title{position:absolute;left:clamp(16px,3vw,40px);top:clamp(16px,3vw,36px);pointer-events:none}
+.title h1{font-size:clamp(54px,9vw,132px);color:var(--ink)}
+.title h1 em{font-style:normal;color:var(--green)}
+.title p{max-width:30ch;color:var(--mute);margin-top:12px}
+.ctrl{position:absolute;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;padding:14px clamp(16px,3vw,40px);background:linear-gradient(transparent,rgba(235,232,225,.95) 40%)}
+.ctrl label{font-weight:700;font-size:15px}
+input[type=range]{width:min(320px,52vw);accent-color:var(--green);height:28px}
+button{font:600 15px "Source Sans 3";border:2px solid var(--ink);background:transparent;color:var(--ink);padding:7px 14px;border-radius:6px;cursor:pointer}
+button:hover,button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.hint{font-size:14px;color:var(--mute)}
+aside{background:var(--panel);border-left:1px solid var(--line);padding:26px;display:flex;flex-direction:column;gap:18px;overflow:auto;max-height:calc(100vh - 62px)}
+aside h2{font-size:44px;color:var(--green)}
+#pinfo p{margin-top:8px}
+#pinfo .fact{margin-top:12px;padding-left:12px;border-left:4px solid var(--sun);font-size:15px}
+#plist{display:flex;flex-wrap:wrap;gap:8px}
+#plist button{font-size:14px;padding:5px 10px;border-width:1.5px}
+section.wrap{padding:clamp(56px,9vw,120px) clamp(16px,6vw,96px);max-width:1280px;margin:auto}
+.wrap>h2{font-size:clamp(44px,7vw,92px);margin-bottom:34px}
+.sys{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0;border-top:3px solid var(--ink)}
+.sys div{padding:22px 24px 26px 0;border-bottom:1px solid var(--line)}
+.sys h3{font-size:32px;color:var(--green);margin-bottom:8px}
+.sys p{color:#2c3b38;max-width:42ch}
+#alonso{background:var(--ink);color:var(--paper);max-width:none}
+#alonso .in{max-width:1280px;margin:auto}
+#alonso h2 span{color:var(--sun)}
+.stats{display:flex;flex-wrap:wrap;gap:16px 56px;margin-bottom:56px}
+.stats b{display:block;font:900 clamp(64px,9vw,120px)/1 "Big Shoulders Display";color:var(--sun)}
+.stats small{font-size:16px;color:#b9c4c0}
+.tl{list-style:none;padding:0;border-left:3px solid var(--sun);max-width:760px}
+.tl li{padding:0 0 26px 26px;position:relative}
+.tl li:before{content:"";position:absolute;left:-10px;top:8px;width:17px;height:17px;background:var(--ink);border:3px solid var(--sun);border-radius:50%}
+.tl b{font:800 30px "Big Shoulders Display";color:var(--sun);margin-right:10px}
+footer{padding:36px clamp(16px,6vw,96px);color:var(--mute);font-size:14px}
+#err{display:none;position:absolute;inset:0;place-items:center;text-align:center;padding:30px;background:var(--paper)}
+@media(max-width:900px){#lab{grid-template-columns:1fr}aside{max-height:none;border-left:0;border-top:1px solid var(--line)}#stage{min-height:78vh}nav{display:none}}
+</style>
+</head>
+<body>
+<header><b>ALONSO<span>·14</span></b><nav><a href="#lab">Laboratorio 3D</a><a href="#sistemas">Cómo funciona</a><a href="#alonso">Fernando</a></nav></header>
+
+<main>
+<div id="lab">
+  <div id="stage">
+    <div class="title"><h1>Fernando<br><em>Alonso</em></h1><p>Un Fórmula 1 que puedes girar, acercar y desmontar pieza a pieza.</p></div>
+    <div id="err"><p>Tu navegador no puede mostrar 3D (WebGL) o no hay conexión para cargar la librería.</p></div>
+    <div class="ctrl">
+      <label for="ex">Desmontar</label><input id="ex" type="range" min="0" max="100" value="0" aria-label="Desmontar el coche">
+      <button id="rot" aria-pressed="true">Giro automático</button>
+      <button id="rst">Restablecer</button>
+      <span class="hint">Arrastra para girar · rueda o pellizco para zoom · toca una pieza</span>
+    </div>
+  </div>
+  <aside>
+    <div id="pinfo"><h2>Elige una pieza</h2><p>Toca cualquier parte del coche o usa la lista. Mueve el deslizador para separar las piezas.</p></div>
+    <div id="plist" role="list"></div>
+  </aside>
+</div>
+
+<section class="wrap" id="sistemas">
+  <h2>Así corre un F1</h2>
+  <div class="sys">
+    <div><h3>Unidad de potencia</h3><p>Un V6 de 1,6 litros con turbo y un sistema eléctrico que recupera energía al frenar. Sobrepasa los 1.000 CV y gira por encima de las 12.000 rpm. Desde 2026 la parte eléctrica pesa casi tanto como la térmica.</p></div>
+    <div><h3>Aerodinámica</h3><p>Alerones, suelo y difusor empujan el coche contra el asfalto. En una curva rápida, ese empuje permite acelerar lateralmente más de 5 g. Las normas de 2026 añaden elementos que cambian de posición según el tramo.</p></div>
+    <div><h3>Frenos</h3><p>Discos de carbono que superan los 1.000 °C. Un F1 pasa de 300 km/h a menos de 100 en pocos segundos y el piloto soporta cerca de 5 g de deceleración.</p></div>
+    <div><h3>Neumáticos</h3><p>Pirelli fabrica varios compuestos: blandos con más agarre y menos vida, duros al revés. Elegir cuándo parar en boxes decide muchas carreras.</p></div>
+    <div><h3>Halo y monocasco</h3><p>El monocasco de fibra de carbono es la célula de supervivencia. El halo, la barra sobre el casco, protege la cabeza del piloto y ya ha salvado vidas.</p></div>
+    <div><h3>Suspensión</h3><p>Brazos y tirantes conectan cada rueda con el chasis. Además de amortiguar, mantienen la altura del suelo constante para que la aerodinámica funcione.</p></div>
+  </div>
+</section>
+
+<section class="wrap" id="alonso" style="max-width:none">
+ <div class="in">
+  <h2>Fernando <span>Alonso</span></h2>
+  <div class="stats">
+    <div><b>2</b><small>Campeonatos del Mundo (2005 y 2006)</small></div>
+    <div><b>32</b><small>Victorias en Grandes Premios</small></div>
+    <div><b>2</b><small>Victorias en las 24 Horas de Le Mans</small></div>
+  </div>
+  <ul class="tl">
+    <li><b>1981</b>Nace en Oviedo, Asturias. Empieza en el karting con solo tres años.</li>
+    <li><b>2001</b>Debuta en F1 con Minardi.</li>
+    <li><b>2003</b>Gana en Hungría con Renault y se convierte, en su momento, en el ganador más joven de la historia de la F1.</li>
+    <li><b>2005</b>Con Renault acaba con el dominio de Michael Schumacher y gana su primer título. Repite en 2006.</li>
+    <li><b>2018</b>Gana las 24 Horas de Le Mans con Toyota y repite en 2019, además del Mundial de Resistencia.</li>
+    <li><b>Hoy</b>Sigue en la parrilla, ya con Aston Martin, con más de 400 Grandes Premios disputados.</li>
+  </ul>
+ </div>
+</section>
+</main>
+<footer>Proyecto fan sin ánimo de lucro, no afiliado a la FIA, a Formula 1 ni a Fernando Alonso. El modelo 3D es una recreación esquemática hecha con formas básicas.</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const stage=document.getElementById('stage'),err=document.getElementById('err');
+if(!window.THREE||!THREE.OrbitControls){err.style.display='grid';return}
+let renderer;
+try{renderer=new THREE.WebGLRenderer({antialias:true,alpha:true})}catch(e){err.style.display='grid';return}
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+stage.insertBefore(renderer.domElement,stage.firstChild);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(38,1,.1,100);
+camera.position.set(5.5,2.6,6);
+const controls=new THREE.OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.minDistance=2.5;controls.maxDistance=16;controls.maxPolarAngle=Math.PI*.52;
+const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+controls.autoRotate=!reduce;controls.autoRotateSpeed=1.2;
+if(reduce)document.getElementById('rot').setAttribute('aria-pressed','false');
+scene.add(new THREE.HemisphereLight(0xffffff,0x8a8577,.9));
+const sun=new THREE.DirectionalLight(0xffffff,.9);sun.position.set(4,8,5);scene.add(sun);
+const back=new THREE.DirectionalLight(0xfff0c8,.4);back.position.set(-5,3,-4);scene.add(back);
+const grid=new THREE.GridHelper(16,32,0x9a9689,0xbdb9ad);grid.position.y=-.02;scene.add(grid);
+
+const M=(c,r=.45,m=.2)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m,emissive:0x000000});
+const GREEN=0x0a6b5c,DARK=0x161a19,SUN=0xf2c230,STEEL=0xa9b0ae;
+const parts={};
+function mk(id,name,desc,fact,ex){const g=new THREE.Group();g.userData={id,name,desc,fact,ex:new THREE.Vector3(...ex)};scene.add(g);parts[id]=g;return g}
+function add(g,geo,col,pos,rot,r,m){const o=new THREE.Mesh(geo,M(col,r,m));o.position.set(...pos);if(rot)o.rotation.set(...rot);g.add(o);return o}
+const B=(x,y,z)=>new THREE.BoxGeometry(x,y,z),C=(a,b,h,s=24)=>new THREE.CylinderGeometry(a,b,h,s);
+
+let g=mk('mono','Monocasco y morro','Es la célula de supervivencia: una tina de fibra de carbono donde va sentado el piloto. Aguanta choques enormes y sostiene todo lo demás. El morro contiene la estructura que absorbe impactos frontales.','Pesa unos 40 kg y aun así resiste cargas de varias toneladas.',[0,.9,0]);
+add(g,B(2.2,.5,.62),GREEN,[.1,.45,0]);
+add(g,C(.1,.3,1.7),GREEN,[1.95,.42,0],[0,0,-Math.PI/2]);
+add(g,B(.5,.16,.5),DARK,[.55,.75,0]);
+
+g=mk('cover','Carrocería y cubierta motor','Tapa el motor y dirige el aire hacia el alerón trasero. La aleta dorsal estabiliza el coche cuando entra de lado en las curvas.','En circuitos calurosos se abren salidas extra para refrigerar el motor.',[0,1.7,0]);
+add(g,B(1.7,.42,.5),GREEN,[-1.1,.68,0]);
+add(g,B(1.2,.3,.03),SUN,[-1.1,1,0]);
+add(g,C(.08,.22,.9),GREEN,[-.15,.72,0],[0,0,-Math.PI/2]);
+
+g=mk('pu','Unidad de potencia','Motor V6 turbo de 1,6 litros unido a un sistema híbrido que genera y recupera electricidad. Entrega más de 1.000 CV y es el corazón del coche.','La unidad se fabrica con una precisión de micras y gira a más de 12.000 rpm.',[-1.6,.5,0]);
+add(g,B(1.1,.4,.5),0x8e9694,[-1.05,.5,0],0,.3,.8);
+[-1.3,-1.05,-.8].forEach(x=>{add(g,C(.11,.11,.5),0x3d4746,[x,.78,0],[Math.PI/2,0,0],.3,.8)});
+add(g,C(.16,.16,.35),0xc9482d,[-1.7,.55,0],[Math.PI/2,0,0],.3,.6);
+
+g=mk('ers','Batería ERS','Guarda la energía eléctrica que el coche recupera al frenar y al aprovechar los gases de escape. El piloto la usa para un extra de potencia en las rectas.','Se recarga en plena carrera, sin enchufe.',[.2,-.9,0]);
+add(g,B(.9,.2,.42),0x2aa7c9,[.1,.2,0],0,.3,.5);
+
+g=mk('floor','Suelo y difusor','La parte que más downforce genera: crea una zona de baja presión bajo el coche que lo “succiona” contra el asfalto. El difusor trasero acelera el aire y lo devuelve al exterior.','Las normas de efecto suelo llegaron a generar más agarre que los alerones.',[0,-.9,0]);
+add(g,B(4.1,.06,1.7),DARK,[.05,.09,0]);
+add(g,B(.8,.14,1.4),DARK,[-2.1,.16,0],[0,0,.25]);
+
+g=mk('side','Pontones','Alojan los radiadores que enfrían motor y baterías. Su forma canaliza el aire hacia la parte trasera para no perder empuje.','Su diseño es una de las zonas donde los equipos más se diferencian.',[0,.2,1.2]);
+[-1,1].forEach(s=>add(g,B(1.5,.34,.42),GREEN,[-.3,.38,s*.55]));
+g.userData.mirror=true;
+
+g=mk('fw','Alerón delantero','Es lo primero que toca el aire. Genera empuje sobre las ruedas delanteras y decide cómo llega el flujo al resto del coche.','Un toque de un centímetro puede cambiar todo el comportamiento del coche.',[2.2,-.2,0]);
+add(g,B(.4,.05,2.2),SUN,[2.85,.13,0]);add(g,B(.28,.05,2.1),GREEN,[2.7,.24,0]);
+[-1.1,1.1].forEach(z=>add(g,B(.5,.3,.04),DARK,[2.75,.24,z]));
+
+g=mk('rw','Alerón trasero','Equilibra el coche empujando el eje trasero contra el suelo. Con los sistemas activos de 2026, sus elementos se adaptan para ganar velocidad en recta.','Cambia el ángulo y ahorras velocidad punta, pero pierdes agarre en curva.',[-2.2,.9,0]);
+add(g,B(.5,.05,1.5),GREEN,[-2.4,1.05,0]);add(g,B(.3,.05,1.5),SUN,[-2.3,1.22,0]);
+[-.75,.75].forEach(z=>add(g,B(.7,.5,.04),DARK,[-2.35,1.1,z]));
+add(g,B(.1,.5,.1),DARK,[-2.2,.75,0]);
+
+g=mk('halo','Halo','Barra de titanio sobre el habitáculo. Protege la cabeza del piloto de impactos y objetos, y ha evitado lesiones graves desde 2018.','Aguanta el peso de un autobús de dos pisos.',[.3,1.8,0]);
+const halo=add(g,new THREE.TorusGeometry(.32,.028,8,24,Math.PI),0x4a5251,[.55,.82,0],[0,0,0],.3,.8);halo.scale.x=1.3;halo.rotation.z=0;
+add(g,C(.03,.03,.3),0x4a5251,[.98,.7,0],[0,0,1.1],.3,.8);
+
+g=mk('driver','Piloto y casco','El piloto va casi tumbado, con las piernas por delante de los pedales. Debe soportar hasta 5-6 g en curvas y perder unos kilos de sudor en cada carrera.','El volante tiene decenas de botones y ajusta reparto de frenada, energía y motor.',[-.2,1.9,0]);
+add(g,new THREE.SphereGeometry(.2,24,16),SUN,[.42,.93,0],0,.25,.1);
+add(g,B(.08,.02,.36),0x2a5fa8,[.42,1.13,0]);
+add(g,C(.16,.16,.02,20),DARK,[.86,.72,0],[0,0,-.6]);
+
+g=mk('susp','Suspensión','Brazos y tirantes que unen cada rueda al chasis. Controlan la altura del coche y mantienen los neumáticos en contacto con el suelo.','Muchos brazos tienen forma de ala para dejar pasar el aire limpiamente.',[0,.6,0]);
+[[1.4,.15],[-1.4,.17]].forEach(([x,y])=>[-1,1].forEach(s=>{
+  const a=add(g,C(.015,.015,.95,6),0x333a39,[x,.36,s*.5],[Math.PI/2,0,0]);
+  const b=add(g,C(.015,.015,.95,6),0x333a39,[x+.12,.22,s*.5],[Math.PI/2,0,0]);}));
+
+const wn={FL:[1.45,.34,.9,'delantera izquierda'],FR:[1.45,.34,-.9,'delantera derecha'],RL:[-1.5,.38,.95,'trasera izquierda'],RR:[-1.5,.38,-.95,'trasera derecha']};
+Object.entries(wn).forEach(([k,[x,r,z,n]])=>{
+ const s=Math.sign(z);
+ const w=mk('w'+k,'Rueda '+n,'Llanta de magnesio y neumático Pirelli. Es el único contacto con el asfalto: cada uno tiene una superficie similar a la de una postal.','Un neumático puede superar los 100 °C: por eso se calientan con mantas antes de salir.',[0,0,s*1.4]);
+ const t=add(w,C(r,r,.36+(x<0?.1:0),32),0x111312,[x,r,z],[Math.PI/2,0,0],.9,0);
+ add(w,C(r*.62,r*.62,.38+(x<0?.1:0),24),STEEL,[x,r,z],[Math.PI/2,0,0],.3,.9);
+ add(w,new THREE.TorusGeometry(r*.9,.02,6,32),0xd7263d,[x,r,z+s*(.18+(x<0?.05:0))],0,.5,0);
+});
+
+// Interacción
+const info=document.getElementById('pinfo'),list=document.getElementById('plist');
+const groups=Object.values(parts);
+let selected=null,hover=null;
+function glow(gr,v){if(!gr)return;gr.traverse(o=>{if(o.isMesh)o.material.emissive.setHex(v)})}
+function refresh(){groups.forEach(x=>glow(x,x===selected?0x5a4a10:x===hover?0x222222:0))}
+function esc(t){return t.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+function select(gr){
+  selected=gr;refresh();
+  document.querySelectorAll('#plist button').forEach(b=>b.setAttribute('aria-pressed',gr&&b.dataset.id===gr.userData.id));
+  if(!gr)return;
+  const d=gr.userData;info.innerHTML='<h2>'+esc(d.name)+'</h2><p>'+esc(d.desc)+'</p><p class="fact">'+esc(d.fact)+'</p>';
+  const p=new THREE.Vector3();new THREE.Box3().setFromObject(gr).getCenter(p);focusT=p;
+}
+let focusT=null;
+groups.forEach(gr=>{const b=document.createElement('button');b.textContent=gr.userData.name.replace('Rueda ','Rueda ');b.dataset.id=gr.userData.id;b.setAttribute('aria-pressed','false');b.onclick=()=>select(gr);list.appendChild(b)});
+function pick(e){
+  const r=renderer.domElement.getBoundingClientRect();
+  const v=new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);
+  const rc=new THREE.Raycaster();rc.setFromCamera(v,camera);
+  const h=rc.intersectObjects(groups,true)[0];if(!h)return null;
+  let o=h.object;while(o&&!o.userData.id)o=o.parent;return o;
+}
+let down=null;const cv=renderer.domElement;
+cv.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY}});
+cv.addEventListener('pointerup',e=>{if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)<6)select(pick(e));down=null});
+cv.addEventListener('pointermove',e=>{if(e.buttons)return;const h=pick(e);if(h!==hover){hover=h;cv.style.cursor=h?'pointer':'grab';refresh()}});
+const ex=document.getElementById('ex');let t=0;
+const rot=document.getElementById('rot');
+rot.onclick=()=>{controls.autoRotate=!controls.autoRotate;rot.setAttribute('aria-pressed',controls.autoRotate)};
+document.getElementById('rst').onclick=()=>{ex.value=0;select(null);info.innerHTML='<h2>Elige una pieza</h2><p>Toca cualquier parte del coche o usa la lista.</p>';camera.position.set(5.5,2.6,6);controls.target.set(0,.4,0);focusT=new THREE.Vector3(0,.4,0)};
+controls.target.set(0,.4,0);
+controls.addEventListener('start',()=>{focusT=null});
+function size(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+new ResizeObserver(size).observe(stage);size();
+function loop(){
+  requestAnimationFrame(loop);
+  t+=(ex.value/100-t)*.12;
+  groups.forEach(gr=>gr.position.copy(gr.userData.ex).multiplyScalar(t*1.5));
+  if(focusT)controls.target.lerp(focusT,.08);
+  controls.update();renderer.render(scene,camera);
+}
+loop();
+})();
+</script>
+</body>
+</html>
