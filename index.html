@@ -109,11 +109,12 @@ footer{padding:36px clamp(16px,6vw,96px);color:var(--mute);font-size:14px;max-wi
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script>
 (function(){
 const stage=document.getElementById('stage'),load=document.getElementById('load');
 function fail(m){load.innerHTML='<b>No se pudo cargar</b><span>'+m+'</span>'}
-if(!window.THREE||!THREE.OrbitControls||!THREE.GLTFLoader){fail('No se cargaron las librerías 3D. Revisa tu conexión.');return}
+if(!window.THREE||!THREE.OrbitControls||!THREE.GLTFLoader||!THREE.DRACOLoader){fail('No se cargaron las librerías 3D. Revisa tu conexión.');return}
 let renderer;try{renderer=new THREE.WebGLRenderer({antialias:true,alpha:true})}catch(e){fail('Tu navegador no admite WebGL.');return}
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
@@ -153,7 +154,9 @@ const info=document.getElementById('pinfo'),list=document.getElementById('plist'
 const esc=t=>t.replace(/[&<>]/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[k]));
 let groups=[],selected=null,hover=null,focusT=null,model=null;
 
-new THREE.GLTFLoader().load('coche.glb',gltf=>{
+const draco=new THREE.DRACOLoader();draco.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/draco/gltf/');
+const gl=new THREE.GLTFLoader();gl.setDRACOLoader(draco);
+gl.load('coche.glb',gltf=>{
   model=gltf.scene;scene.add(model);
   model.traverse(o=>{if(o.isMesh){o.material=o.material.clone()}});
   model.updateMatrixWorld(true);
